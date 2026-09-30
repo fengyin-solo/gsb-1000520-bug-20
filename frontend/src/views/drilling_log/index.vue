@@ -36,7 +36,14 @@
       </thead>
       <tbody>
         <tr v-for="row in rows" :key="String(row.id)">
-          <td v-for="column in columns" :key="column">{{ row[column] ?? '—' }}</td>
+          <td v-for="column in columns" :key="column">
+            <template v-if="column === '钻孔编号'">
+              {{ row[column] ?? '—' }}
+              <span v-if="isTodo(row)" class="version-tag">v{{ row['钻孔版本'] ?? '—' }}</span>
+              <span v-else class="history-tag">历史快照</span>
+            </template>
+            <template v-else>{{ row[column] ?? '—' }}</template>
+          </td>
           <td class="row-actions">
             <button
               v-for="action in actions"
@@ -80,6 +87,11 @@ const total = ref(0)
 const errorMessage = ref('')
 const filters = ref<Record<string, string>>({})
 const filterFields = columns.slice(0, 3)
+
+const TODO_STATUSES = ['待填写', '退回补充']
+function isTodo(row: Row): boolean {
+  return TODO_STATUSES.includes(String(row.status ?? ''))
+}
 
 function resetFilters() {
   filters.value = {}
@@ -128,3 +140,26 @@ async function reload() {
 
 onMounted(reload)
 </script>
+
+<style scoped>
+.version-tag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  color: #1f6feb;
+  background: #eef4ff;
+  border-radius: 10px;
+  padding: 0 8px;
+  line-height: 18px;
+}
+.history-tag {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 11px;
+  color: #64748b;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 0 8px;
+  line-height: 18px;
+}
+</style>
