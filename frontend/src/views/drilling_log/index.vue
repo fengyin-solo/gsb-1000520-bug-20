@@ -23,6 +23,14 @@
         <span>{{ field }}</span>
         <input v-model="filters[field]" :placeholder="`按${field}检索`" />
       </label>
+      <label class="filter-item">
+        <span>范围</span>
+        <select v-model="filters.pending">
+          <option value="">全部</option>
+          <option value="true">仅待办</option>
+          <option value="false">仅历史</option>
+        </select>
+      </label>
       <button class="btn" type="submit">查询</button>
       <button class="btn ghost" type="button" @click="resetFilters">重置条件</button>
     </form>
@@ -31,12 +39,14 @@
       <thead>
         <tr>
           <th v-for="column in columns" :key="column">{{ column }}</th>
+          <th>钻孔版本</th>
           <th>可执行动作</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="row in rows" :key="String(row.id)">
           <td v-for="column in columns" :key="column">{{ row[column] ?? '—' }}</td>
+          <td>{{ row['钻孔版本'] ? `v${row['钻孔版本']}` : '—' }}</td>
           <td class="row-actions">
             <button
               v-for="action in actions"
@@ -50,7 +60,7 @@
           </td>
         </tr>
         <tr v-if="!rows.length">
-          <td :colspan="columns.length + 1" class="empty-state">暂无钻探日志数据，可先登记钻探记录</td>
+          <td :colspan="columns.length + 2" class="empty-state">暂无钻探日志数据，可先登记钻探记录</td>
         </tr>
       </tbody>
     </table>
@@ -112,7 +122,11 @@ async function runAction(action: string, row: Row) {
 
 async function reload() {
   errorMessage.value = ''
-  const query = new URLSearchParams(filters.value as Record<string, string>).toString()
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(filters.value as Record<string, string>)) {
+    if (value && key !== 'pending') query.set(key, value)
+  }
+  if (filters.value.pending) query.set('pending', filters.value.pending)
   try {
     const response = await request(`${ENDPOINT}?${query}`)
     if (!response.ok) {
